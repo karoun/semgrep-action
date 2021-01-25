@@ -6,6 +6,7 @@ from pathlib import Path
 from textwrap import dedent
 from typing import NoReturn
 from typing import Optional
+from typing import Sequence
 
 import click
 import sh
@@ -47,6 +48,7 @@ def get_aligned_command(title: str, subtext: str) -> str:
 @click.option(
     "--gitlab-json", "gitlab_output", envvar="SEMGREP_GITLAB_JSON", is_flag=True
 )
+@click.option("--silent-on", envvar="INPUT_SILENTON", multiple=True, type=str)
 def main(
     config: str,
     baseline_ref: str,
@@ -55,6 +57,7 @@ def main(
     publish_deployment: int,
     json_output: bool,
     gitlab_output: bool,
+    silent_on: Sequence[str],
 ) -> NoReturn:
     click.echo(
         get_aligned_command(
@@ -192,7 +195,8 @@ def main(
     if sapp.is_configured:
         sapp.report_results(results)
 
-    exit_code = 1 if blocking_findings else 0
+    silent_mode = meta.event_name in silent_on
+    exit_code = 1 if blocking_findings and not silent_mode else 0
     click.echo(
         f"=== exiting with {'failing' if exit_code == 1 else 'success'} status",
         err=True,
